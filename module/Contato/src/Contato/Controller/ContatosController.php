@@ -2,13 +2,21 @@
 
 namespace Contato\Controller;
 
+// import Zend\Mvc
 use Zend\Mvc\Controller\AbstractActionController;
+// import Zend\View
+use Zend\View\Model\ViewModel;
+// imort Model\ContatoTable com alias
+use Contato\Model\ContatoTable as ModelContato;
 
 class ContatosController extends AbstractActionController {
 
+    protected $contatoTable;
+
     // GET /contatos
     public function indexAction() {
-        
+        // enviar para view o array com key contatos e value com todos os contatos
+        return new ViewModel(array('contatos' => $this->getContatoTable()->fetchAll()));
     }
 
     // GET /contatos/novo
@@ -25,7 +33,7 @@ class ContatosController extends AbstractActionController {
         if ($request->isPost()) {
             // obter e armazenar valores do post
             $postData = $request->getPost()->toArray();
-            $formularioValido = false;
+            $formularioValido = true;
 
             // verifica se o formulário segue a validação proposta
             if ($formularioValido) {
@@ -61,17 +69,19 @@ class ContatosController extends AbstractActionController {
             return $this->redirect()->toRoute('contatos');
         }
 
-        // aqui vai a lógica para pegar os dados referente ao contato
-        // 1 - solicitar serviço para pegar o model responsável pelo find
-        // 2 - solicitar form com dados desse contato encontrado
-        // formulário com dados preenchidos
-        $form = array(
-            'nome' => 'Deivid Pinto',
-            "telefone_principal" => "(085) 8585-8585",
-            "telefone_secundario" => "(085) 8585-8585",
-            "data_criacao" => "02/03/2013",
-            "data_atualizacao" => "02/03/2013",
-        );
+        try {
+            // aqui vai a lógica para pegar os dados referente ao contato
+            // 1 - solicitar serviço para pegar o model responsável pelo find
+            // 2 - solicitar form com dados desse contato encontrado
+            // formulário com dados preenchidos
+            $form = (array) $this->getContatoTable()->find($id);
+        } catch (\Exception $exc) {
+            // adicionar mensagem
+            $this->flashMessenger()->addErrorMessage($exc->getMessage());
+
+            // redirecionar para action index
+            return $this->redirect()->toRoute('contatos');
+        }
 
         // dados eviados para detalhes.phtml
         return array('id' => $id, 'form' => $form);
@@ -91,15 +101,19 @@ class ContatosController extends AbstractActionController {
             return $this->redirect()->toRoute('contatos');
         }
 
-        // aqui vai a lógica para pegar os dados referente ao contato
-        // 1 - solicitar serviço para pegar o model responsável pelo find
-        // 2 - solicitar form com dados desse contato encontrado
-        // formulário com dados preenchidos
-        $form = array(
-            'nome' => 'Deivid Pinto',
-            "telefone_principal" => "(085) 8585-8585",
-            "telefone_secundario" => "(085) 8585-8585",
-        );
+        try {
+            // aqui vai a lógica para pegar os dados referente ao contato
+            // 1 - solicitar serviço para pegar o model responsável pelo find
+            // 2 - solicitar form com dados desse contato encontrado
+            // formulário com dados preenchidos
+            $form = (array) $this->getContatoTable()->find($id);
+        } catch (\Exception $exc) {
+            // adicionar mensagem
+            $this->flashMessenger()->addErrorMessage($exc->getMessage());
+
+            // redirecionar para action index
+            return $this->redirect()->toRoute('contatos');
+        }
 
         // dados eviados para editar.phtml
         return array('id' => $id, 'form' => $form);
@@ -155,6 +169,20 @@ class ContatosController extends AbstractActionController {
 
         // redirecionar para action index
         return $this->redirect()->toRoute('contatos');
+    }
+
+    /**
+     * Metodo privado para obter instacia do Model ContatoTable
+     * 
+     * @return \Contato\Model\ContatoTable
+     */
+    private function getContatoTable() {
+        // adicionar service ModelContato a variavel de classe
+        if (!$this->contatoTable)
+            $this->contatoTable = $this->getServiceLocator()->get('ModelContato');
+
+        // return vairavel de classe com service ModelContato
+        return $this->contatoTable;
     }
 
 }
